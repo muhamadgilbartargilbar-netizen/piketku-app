@@ -1,0 +1,51 @@
+
+name: Build PiketKu APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Create Flutter project
+        run: flutter create --platforms=android --project-name piketku app
+
+      - name: Extract source
+        run: |
+          unzip PiketKu_Flutter_Source.zip -d source
+          cp source/piketku/pubspec.yaml app/pubspec.yaml
+          rm -rf app/lib
+          cp -r source/piketku/lib app/lib
+          cp source/piketku/android/app/src/main/AndroidManifest.xml app/android/app/src/main/AndroidManifest.xml
+
+      - name: Install dependencies
+        working-directory: app
+        run: flutter pub get
+
+      - name: Build APK
+        working-directory: app
+        run: flutter build apk --release
+
+      - name: Save APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: PiketKu-APK
+          path: app/build/app/outputs/flutter-apk/app-release.apk
